@@ -16,13 +16,17 @@ object SheetParser {
         .readTimeout(15, TimeUnit.SECONDS)
         .build()
 
-    fun parse(sheetUrl: String): List<FlashCard> {
+    data class ParseResult(val cards: List<FlashCard>, val title: String)
+
+    fun parse(sheetUrl: String): ParseResult {
         val sheetId = extractSheetId(sheetUrl)
             ?: throw IllegalArgumentException("Не удалось извлечь ID таблицы из ссылки")
 
         val csvUrl = "https://docs.google.com/spreadsheets/d/$sheetId/export?format=csv"
         val csv = fetchCsv(csvUrl)
-        return parseCsv(csv)
+        val cards = parseCsv(csv)
+        val title = fetchTitle(sheetUrl)
+        return ParseResult(cards, title)
     }
 
     private fun extractSheetId(url: String): String? {
@@ -37,6 +41,22 @@ object SheetParser {
             throw Exception("HTTP ${response.code} ${response.message}")
         }
         return response.body?.string() ?: throw Exception("Пустой ответ от сервера")
+    }
+
+    private fun fetchTitle(sheetUrl: String): String {
+        val id = extractSheetId(sheetUrl) ?: return "Таблица"
+        try {
+            val request = Request.Builder()
+                .url("https://docs.google.com/spreadsheets/d/$id/")
+                .build()
+            val response = client.newCall(request).execute()
+            val html = response.body?.string() ?: return id
+            val titleMatch = Regex("<title>(.*?)</title>").find(html)
+            val raw = titleMatch?.groupValues?.getOrNull(1) ?: return id
+            return raw.removeSuffix(" - Google Sheets").trim()
+        } catch (_: Exception) {
+            return id
+        }
     }
 
     private fun parseCsv(csv: String): List<FlashCard> {

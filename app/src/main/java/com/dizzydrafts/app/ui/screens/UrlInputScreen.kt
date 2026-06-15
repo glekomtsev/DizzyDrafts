@@ -8,9 +8,11 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -18,9 +20,15 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 
 @Composable
-fun UrlInputScreen(onUrlSaved: (String) -> Unit) {
+fun UrlInputScreen(
+    onUrlValidated: (String) -> Unit,
+    onBack: () -> Unit,
+    isLoading: Boolean = false,
+    error: String? = null,
+    onErrorDismiss: () -> Unit = {}
+) {
     var url by remember { mutableStateOf("") }
-    var error by remember { mutableStateOf<String?>(null) }
+    var validationError by remember { mutableStateOf<String?>(null) }
 
     Column(
         modifier = Modifier
@@ -49,14 +57,19 @@ fun UrlInputScreen(onUrlSaved: (String) -> Unit) {
             value = url,
             onValueChange = {
                 url = it
-                error = null
+                validationError = null
+                onErrorDismiss()
             },
             label = { Text("Ссылка на таблицу") },
             placeholder = { Text("https://docs.google.com/spreadsheets/d/...") },
             modifier = Modifier.fillMaxWidth(),
-            isError = error != null,
-            supportingText = error?.let { { Text(it) } },
-            singleLine = true
+            isError = validationError != null || error != null,
+            supportingText = {
+                val msg = validationError ?: error
+                if (msg != null) Text(msg)
+            },
+            singleLine = true,
+            enabled = !isLoading
         )
 
         Spacer(Modifier.height(16.dp))
@@ -64,16 +77,24 @@ fun UrlInputScreen(onUrlSaved: (String) -> Unit) {
         Button(
             onClick = {
                 if (url.isBlank() || !url.contains("docs.google.com/spreadsheets")) {
-                    error = "Введите корректную ссылку на Google Таблицу"
+                    validationError = "Введите корректную ссылку на Google Таблицу"
                 } else {
-                    onUrlSaved(url)
+                    onUrlValidated(url)
                 }
             },
             modifier = Modifier
                 .fillMaxWidth()
-                .height(50.dp)
+                .height(50.dp),
+            enabled = !isLoading
         ) {
-            Text("Начать", style = MaterialTheme.typography.titleMedium)
+            if (isLoading) {
+                CircularProgressIndicator(
+                    color = MaterialTheme.colorScheme.onPrimary,
+                    modifier = Modifier.height(24.dp)
+                )
+            } else {
+                Text("Загрузить", style = MaterialTheme.typography.titleMedium)
+            }
         }
 
         Spacer(Modifier.height(24.dp))
@@ -84,5 +105,11 @@ fun UrlInputScreen(onUrlSaved: (String) -> Unit) {
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center
         )
+
+        Spacer(Modifier.height(16.dp))
+
+        TextButton(onClick = onBack) {
+            Text("Назад")
+        }
     }
 }

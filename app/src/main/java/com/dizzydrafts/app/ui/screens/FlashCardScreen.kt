@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -24,42 +23,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.dizzydrafts.app.data.FlashCard
-import com.dizzydrafts.app.data.SheetParser
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
-import kotlin.random.Random
 
 @Composable
-fun FlashCardScreen(sheetUrl: String, onReset: () -> Unit) {
-    var cards by remember { mutableStateOf<List<FlashCard>>(emptyList()) }
-    var currentCard by remember { mutableStateOf<FlashCard?>(null) }
+fun FlashCardScreen(
+    cards: List<FlashCard>,
+    name: String,
+    onBack: () -> Unit
+) {
+    var currentCard by remember { mutableStateOf(cards.random()) }
     var showAnswer by remember { mutableStateOf(false) }
-    var showQuestionSide by remember { mutableStateOf(true) }
-    var isLoading by remember { mutableStateOf(true) }
-    var errorState by remember { mutableStateOf<String?>(null) }
-
-    LaunchedEffect(sheetUrl) {
-        isLoading = true
-        errorState = null
-        try {
-            val parsed = withContext(Dispatchers.IO) {
-                SheetParser.parse(sheetUrl)
-            }
-            if (parsed.isEmpty()) {
-                errorState = "Таблица пуста или не содержит данных"
-            } else {
-                cards = parsed
-                pickNext(parsed, null) { card, showQ ->
-                    currentCard = card
-                    showQuestionSide = showQ
-                    showAnswer = false
-                }
-            }
-        } catch (e: Exception) {
-            errorState = "Ошибка: ${e.message}"
-        }
-        isLoading = false
-    }
 
     Column(modifier = Modifier.fillMaxSize()) {
         Surface(
@@ -75,69 +47,34 @@ fun FlashCardScreen(sheetUrl: String, onReset: () -> Unit) {
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Тема: ${currentCard?.topic ?: "—"}",
+                    text = "Тема: ${currentCard.topic}",
                     style = MaterialTheme.typography.titleMedium
                 )
-                TextButton(onClick = onReset) {
-                    Text("Сбросить")
+                TextButton(onClick = onBack) {
+                    Text("Назад")
                 }
             }
         }
 
-        when {
-            isLoading -> {
-                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator()
-                }
+        FlashCardContent(
+            card = currentCard,
+            showAnswer = showAnswer,
+            onReveal = { showAnswer = true },
+            onNext = {
+                currentCard = cards.random()
+                showAnswer = false
             }
-            errorState != null -> {
-                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(
-                            text = errorState!!,
-                            color = MaterialTheme.colorScheme.error,
-                            textAlign = TextAlign.Center,
-                            modifier = Modifier.padding(16.dp)
-                        )
-                        Spacer(Modifier.height(16.dp))
-                        Button(onClick = onReset) {
-                            Text("Изменить таблицу")
-                        }
-                    }
-                }
-            }
-            currentCard != null -> {
-                FlashCardContent(
-                    card = currentCard!!,
-                    showQuestionSide = showQuestionSide,
-                    showAnswer = showAnswer,
-                    onReveal = { showAnswer = true },
-                    onNext = {
-                        pickNext(cards, currentCard) { card, showQ ->
-                            currentCard = card
-                            showQuestionSide = showQ
-                            showAnswer = false
-                        }
-                    }
-                )
-            }
-        }
+        )
     }
 }
 
 @Composable
 private fun FlashCardContent(
     card: FlashCard,
-    showQuestionSide: Boolean,
     showAnswer: Boolean,
     onReveal: () -> Unit,
     onNext: () -> Unit
 ) {
-    val topText = if (showQuestionSide) card.question else card.answer
-    val bottomText = if (showQuestionSide) card.answer else card.question
-    val topLabel = if (showQuestionSide) "Вопрос" else "Ответ"
-    val bottomLabel = if (showQuestionSide) "Ответ" else "Вопрос"
-
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -157,13 +94,13 @@ private fun FlashCardContent(
                 verticalArrangement = Arrangement.Center
             ) {
                 Text(
-                    text = topLabel,
+                    text = "Вопрос",
                     style = MaterialTheme.typography.labelLarge,
                     color = MaterialTheme.colorScheme.primary
                 )
                 Spacer(Modifier.height(8.dp))
                 Text(
-                    text = topText,
+                    text = card.question,
                     style = MaterialTheme.typography.headlineSmall,
                     textAlign = TextAlign.Center
                 )
@@ -196,20 +133,20 @@ private fun FlashCardContent(
                 if (showAnswer) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Text(
-                            text = bottomLabel,
+                            text = "Ответ",
                             style = MaterialTheme.typography.labelLarge,
                             color = MaterialTheme.colorScheme.secondary
                         )
                         Spacer(Modifier.height(8.dp))
                         Text(
-                            text = bottomText,
+                            text = card.answer,
                             style = MaterialTheme.typography.headlineSmall,
                             textAlign = TextAlign.Center
                         )
                     }
                 } else {
                     Text(
-                        text = "Нажмите, чтобы показать $bottomLabel",
+                        text = "Нажмите, чтобы показать ответ",
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         textAlign = TextAlign.Center
@@ -232,19 +169,4 @@ private fun FlashCardContent(
             )
         }
     }
-}
-
-private fun pickNext(
-    cards: List<FlashCard>,
-    current: FlashCard?,
-    onResult: (FlashCard, Boolean) -> Unit
-) {
-    val filtered = if (current != null && cards.size > 1) {
-        cards.filter { it != current }
-    } else {
-        cards
-    }
-    val card = filtered.random()
-    val showQ = Random.nextBoolean()
-    onResult(card, showQ)
 }
