@@ -159,6 +159,7 @@ private fun SwipeToDismissCard(
                     onSwipeToDelete()
                     false
                 }
+                SwipeToDismissBoxValue.Settled -> false
             }
         }
     )
