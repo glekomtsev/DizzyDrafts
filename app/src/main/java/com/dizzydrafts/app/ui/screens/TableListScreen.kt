@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -45,7 +46,9 @@ fun TableListScreen(
     tables: List<SavedTable>,
     onTableTap: (SavedTable) -> Unit,
     onAddTable: () -> Unit,
-    onDeleteTable: (SavedTable) -> Unit
+    onDeleteTable: (SavedTable) -> Unit,
+    onRefreshTable: (SavedTable) -> Unit = {},
+    refreshError: String? = null
 ) {
     if (tables.isEmpty()) {
         EmptyState(onAddTable = onAddTable)
@@ -80,7 +83,8 @@ fun TableListScreen(
 
                 LazyColumn(
                     modifier = Modifier
-                        .fillMaxSize()
+                        .weight(1f)
+                        .fillMaxWidth()
                         .padding(horizontal = 16.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
@@ -88,7 +92,25 @@ fun TableListScreen(
                         SwipeToDismissCard(
                             table = table,
                             onTap = { onTableTap(table) },
-                            onSwipeToDelete = { tableToDelete = table }
+                            onSwipeToDelete = { tableToDelete = table },
+                            onSwipeToRefresh = { onRefreshTable(table) }
+                        )
+                    }
+                }
+
+                if (refreshError != null) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(Color(0xFF424242))
+                            .padding(12.dp)
+                    ) {
+                        Text(
+                            text = refreshError,
+                            color = Color.White,
+                            style = MaterialTheme.typography.bodyMedium,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.fillMaxWidth()
                         )
                     }
                 }
@@ -123,34 +145,58 @@ fun TableListScreen(
 private fun SwipeToDismissCard(
     table: SavedTable,
     onTap: () -> Unit,
-    onSwipeToDelete: () -> Unit
+    onSwipeToDelete: () -> Unit,
+    onSwipeToRefresh: () -> Unit
 ) {
     val dismissState = rememberSwipeToDismissBoxState(
         confirmValueChange = {
-            if (it == SwipeToDismissBoxValue.EndToStart) {
-                onSwipeToDelete()
-                false
-            } else false
+            when (it) {
+                SwipeToDismissBoxValue.StartToEnd -> {
+                    onSwipeToRefresh()
+                    false
+                }
+                SwipeToDismissBoxValue.EndToStart -> {
+                    onSwipeToDelete()
+                    false
+                }
+            }
         }
     )
 
     SwipeToDismissBox(
         state = dismissState,
-        enableDismissFromStartToEnd = false,
+        enableDismissFromStartToEnd = true,
         enableDismissFromEndToStart = true,
         backgroundContent = {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(Color(0xFFB71C1C))
-                    .padding(horizontal = 20.dp),
-                contentAlignment = Alignment.CenterEnd
-            ) {
-                Text(
-                    text = "Удалить",
-                    color = Color.White,
-                    style = MaterialTheme.typography.titleMedium
-                )
+            Row(modifier = Modifier.fillMaxSize()) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxHeight()
+                        .weight(1f)
+                        .background(Color(0xFF2E7D32))
+                        .padding(horizontal = 20.dp),
+                    contentAlignment = Alignment.CenterStart
+                ) {
+                    Text(
+                        text = "Обновить",
+                        color = Color.White,
+                        style = MaterialTheme.typography.titleMedium
+                    )
+                }
+                Box(
+                    modifier = Modifier
+                        .fillMaxHeight()
+                        .weight(1f)
+                        .background(Color(0xFFB71C1C))
+                        .padding(horizontal = 20.dp),
+                    contentAlignment = Alignment.CenterEnd
+                ) {
+                    Text(
+                        text = "Удалить",
+                        color = Color.White,
+                        style = MaterialTheme.typography.titleMedium
+                    )
+                }
             }
         }
     ) {

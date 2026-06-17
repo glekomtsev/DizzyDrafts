@@ -33,6 +33,7 @@ class MainActivity : ComponentActivity() {
                 var screen by remember { mutableStateOf<Screen>(Screen.TableList) }
                 var loading by remember { mutableStateOf(false) }
                 var loadingError by remember { mutableStateOf<String?>(null) }
+                var refreshError by remember { mutableStateOf<String?>(null) }
 
                 if (tables.isEmpty()) screen = Screen.UrlInput
 
@@ -41,6 +42,7 @@ class MainActivity : ComponentActivity() {
                         TableListScreen(
                             tables = tables,
                             onTableTap = { table ->
+                                refreshError = null
                                 scope.launch {
                                     loading = true
                                     loadingError = null
@@ -63,7 +65,25 @@ class MainActivity : ComponentActivity() {
                                     }
                                     tables = TableStorage.loadTables(this@MainActivity)
                                 }
-                            }
+                            },
+                            onRefreshTable = { table ->
+                                scope.launch {
+                                    try {
+                                        val result = withContext(Dispatchers.IO) {
+                                            SheetParser.parse(table.url)
+                                        }
+                                        val updatedTable = table.copy(name = result.title)
+                                        withContext(Dispatchers.IO) {
+                                            TableStorage.saveTable(this@MainActivity, updatedTable, result.cards)
+                                        }
+                                        tables = TableStorage.loadTables(this@MainActivity)
+                                        refreshError = null
+                                    } catch (_: Exception) {
+                                        refreshError = "Нет сети"
+                                    }
+                                }
+                            },
+                            refreshError = refreshError
                         )
                     }
 
