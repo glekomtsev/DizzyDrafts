@@ -31,12 +31,11 @@ import com.dizzydrafts.app.data.FlashCard
 @Composable
 fun FlashCardScreen(
     cards: List<FlashCard>,
-    name: String,
     onBack: () -> Unit
 ) {
-    var currentCard by remember { mutableStateOf(cards.random()) }
+    val shuffledCards = remember { cards.shuffled() }
+    var currentIndex by remember { mutableStateOf(0) }
     var showAnswer by remember { mutableStateOf(false) }
-    var viewedCount by remember { mutableStateOf(1) }
 
     Column(modifier = Modifier.fillMaxSize()) {
         Surface(
@@ -53,11 +52,11 @@ fun FlashCardScreen(
             ) {
                 Column {
                     Text(
-                        text = "Тема: ${currentCard.topic}",
+                        text = "Тема: ${shuffledCards[currentIndex].topic}",
                         style = MaterialTheme.typography.titleMedium
                     )
                     Text(
-                        text = "$viewedCount/${cards.size}",
+                        text = "${currentIndex + 1}/${cards.size}",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
                     )
@@ -69,13 +68,12 @@ fun FlashCardScreen(
         }
 
         FlashCardContent(
-            card = currentCard,
+            card = shuffledCards[currentIndex],
             showAnswer = showAnswer,
             onReveal = { showAnswer = true },
             onNext = {
-                currentCard = cards.random()
+                currentIndex = (currentIndex + 1) % cards.size
                 showAnswer = false
-                viewedCount++
             }
         )
     }

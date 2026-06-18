@@ -149,7 +149,6 @@ class MainActivity : ComponentActivity() {
                     is Screen.Study -> {
                         FlashCardScreen(
                             cards = current.cards,
-                            name = current.table.name,
                             onBack = {
                                 tables = TableStorage.loadTables(this@MainActivity)
                                 screen = Screen.TableList
