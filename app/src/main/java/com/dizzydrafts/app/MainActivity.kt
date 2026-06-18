@@ -3,7 +3,18 @@ package com.dizzydrafts.app
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.dizzydrafts.app.data.FlashCard
 import com.dizzydrafts.app.data.SavedTable
 import com.dizzydrafts.app.data.SheetParser
@@ -37,7 +48,15 @@ class MainActivity : ComponentActivity() {
 
                 if (tables.isEmpty()) screen = Screen.UrlInput
 
-                when (val current = screen) {
+                val context = LocalContext.current
+                val versionName = remember {
+                    try {
+                        context.packageManager.getPackageInfo(context.packageName, 0).versionName ?: ""
+                    } catch (_: Exception) { "" }
+                }
+
+                Box(modifier = Modifier.fillMaxSize()) {
+                    when (val current = screen) {
                     is Screen.TableList -> {
                         TableListScreen(
                             tables = tables,
@@ -138,6 +157,16 @@ class MainActivity : ComponentActivity() {
                         )
                     }
                 }
+
+                Text(
+                    text = versionName,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
+                    fontSize = 10.sp,
+                    textAlign = TextAlign.End,
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .padding(end = 8.dp, bottom = 8.dp)
+                )
             }
         }
     }
