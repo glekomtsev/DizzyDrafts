@@ -36,6 +36,7 @@ fun FlashCardScreen(
 ) {
     var currentCard by remember { mutableStateOf(cards.random()) }
     var showAnswer by remember { mutableStateOf(false) }
+    var viewedCount by remember { mutableStateOf(1) }
 
     Column(modifier = Modifier.fillMaxSize()) {
         Surface(
@@ -50,10 +51,17 @@ fun FlashCardScreen(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = "Тема: ${currentCard.topic}",
-                    style = MaterialTheme.typography.titleMedium
-                )
+                Column {
+                    Text(
+                        text = "Тема: ${currentCard.topic}",
+                        style = MaterialTheme.typography.titleMedium
+                    )
+                    Text(
+                        text = "$viewedCount/${cards.size}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
+                    )
+                }
                 TextButton(onClick = onBack) {
                     Text("Назад")
                 }
@@ -67,6 +75,7 @@ fun FlashCardScreen(
             onNext = {
                 currentCard = cards.random()
                 showAnswer = false
+                viewedCount++
             }
         )
     }
