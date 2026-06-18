@@ -11,8 +11,8 @@ android {
         applicationId = "com.dizzydrafts.app"
         minSdk = 24
         targetSdk = 34
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = (project.findProperty("versionCode") as String? ?: "1").toInt()
+        versionName = "1.0.${versionCode}"
     }
 
     buildTypes {
