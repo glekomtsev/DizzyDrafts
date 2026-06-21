@@ -33,7 +33,7 @@ fun FlashCardScreen(
     cards: List<FlashCard>,
     onBack: () -> Unit
 ) {
-    val shuffledCards = remember { cards.shuffled() }
+    var shuffledCards by remember { mutableStateOf(cards.shuffled()) }
     var currentIndex by remember { mutableStateOf(0) }
     var showAnswer by remember { mutableStateOf(false) }
 
@@ -72,7 +72,12 @@ fun FlashCardScreen(
             showAnswer = showAnswer,
             onReveal = { showAnswer = true },
             onNext = {
-                currentIndex = (currentIndex + 1) % cards.size
+                if (currentIndex + 1 >= cards.size) {
+                    shuffledCards = cards.shuffled()
+                    currentIndex = 0
+                } else {
+                    currentIndex++
+                }
                 showAnswer = false
             },
             onPrevious = {
