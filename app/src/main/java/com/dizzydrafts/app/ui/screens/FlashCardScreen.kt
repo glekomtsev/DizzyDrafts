@@ -74,6 +74,10 @@ fun FlashCardScreen(
             onNext = {
                 currentIndex = (currentIndex + 1) % cards.size
                 showAnswer = false
+            },
+            onPrevious = {
+                currentIndex = if (currentIndex > 0) currentIndex - 1 else cards.size - 1
+                showAnswer = false
             }
         )
     }
@@ -84,7 +88,8 @@ private fun FlashCardContent(
     card: FlashCard,
     showAnswer: Boolean,
     onReveal: () -> Unit,
-    onNext: () -> Unit
+    onNext: () -> Unit,
+    onPrevious: () -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -183,16 +188,32 @@ private fun FlashCardContent(
 
         Spacer(Modifier.height(16.dp))
 
-        Button(
-            onClick = onNext,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(56.dp)
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Text(
-                text = "Дальше",
-                style = MaterialTheme.typography.titleLarge
-            )
+            Button(
+                onClick = onPrevious,
+                modifier = Modifier
+                    .weight(1f)
+                    .height(56.dp)
+            ) {
+                Text(
+                    text = "← Назад",
+                    style = MaterialTheme.typography.titleLarge
+                )
+            }
+            Button(
+                onClick = onNext,
+                modifier = Modifier
+                    .weight(1f)
+                    .height(56.dp)
+            ) {
+                Text(
+                    text = "Дальше →",
+                    style = MaterialTheme.typography.titleLarge
+                )
+            }
         }
     }
 }
